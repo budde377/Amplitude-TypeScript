@@ -254,7 +254,7 @@ export class SessionReplayEventsIDBStore extends BaseEventsStore<number> {
     let timedOut = false;
     try {
       const sequences: SendingSequencesReturn<number>[] = [];
-      const tx = this.db.transaction('sequencesToSend');
+      const tx = this.db.transaction('sequencesToSend', 'readwrite');
       // Attach a catch handler immediately so tx.done rejections (e.g. AbortError after
       // cursor traversal completes) are always handled without blocking the return path.
       // The errorLogged / timedOut flags prevent double-logging and double-recording
@@ -286,6 +286,7 @@ export class SessionReplayEventsIDBStore extends BaseEventsStore<number> {
         // flushing them produces empty-body POSTs the server rejects with 400.
         if (events.length === 0) {
           this.maybeWarnEmptyFiltered('getSequencesToSend');
+          await cursor.delete();
         } else {
           // Return all completed sequences regardless of tabId.  Filtering by tab
           // would cause event loss on page reload: a new store instance gets a
