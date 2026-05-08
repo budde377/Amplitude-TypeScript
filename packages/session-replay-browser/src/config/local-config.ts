@@ -4,6 +4,7 @@ import {
   DEFAULT_SAMPLE_RATE,
   DEFAULT_SERVER_ZONE,
   DEFAULT_URL_CHANGE_POLLING_INTERVAL,
+  MIN_INTERVAL,
   UNMASK_TEXT_CLASS,
 } from '../constants';
 import { SessionReplayOptions, StoreType } from '../typings/session-replay';
@@ -141,15 +142,15 @@ function sanitizeFlushIntervalConfig(raw: FlushIntervalConfig, loggerProvider: I
       sanitized.maxIntervalMs = raw.maxIntervalMs;
     }
   }
-  if (
-    sanitized.minIntervalMs !== undefined &&
-    sanitized.maxIntervalMs !== undefined &&
-    sanitized.maxIntervalMs < sanitized.minIntervalMs
-  ) {
+  const effectiveMin = sanitized.minIntervalMs ?? MIN_INTERVAL;
+  const effectiveMax = sanitized.maxIntervalMs;
+  if (effectiveMax !== undefined && effectiveMax < effectiveMin) {
     loggerProvider.warn(
-      `flushIntervalConfig.maxIntervalMs (${sanitized.maxIntervalMs}) is less than minIntervalMs (${sanitized.minIntervalMs}); raising max to match min.`,
+      `flushIntervalConfig.maxIntervalMs (${effectiveMax}) is less than ${
+        sanitized.minIntervalMs !== undefined ? 'minIntervalMs' : 'default minIntervalMs'
+      } (${effectiveMin}); raising max to match min.`,
     );
-    sanitized.maxIntervalMs = sanitized.minIntervalMs;
+    sanitized.maxIntervalMs = effectiveMin;
   }
   return sanitized;
 }

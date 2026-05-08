@@ -26,6 +26,7 @@ export abstract class BaseEventsStore<KeyType> implements EventsStore<KeyType> {
     this.minInterval = args.minInterval ?? this.minInterval;
     this.maxInterval = args.maxInterval ?? this.maxInterval;
     this.maxPersistedEventsSize = args.maxPersistedEventsSize ?? this.maxPersistedEventsSize;
+    this.interval = this.minInterval;
   }
 
   abstract addEventToCurrentSequence(
