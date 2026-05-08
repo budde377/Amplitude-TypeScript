@@ -332,37 +332,37 @@ export class SessionReplayTrackDestination implements AmplitudeSessionReplayTrac
         continue;
       }
       let current: SessionReplayDestinationContext | null = null;
-      let currentChars = 0;
+      let currentBytes = 0;
       const flushCurrent = () => {
         if (current) merged.push(current);
         current = null;
-        currentChars = 0;
+        currentBytes = 0;
       };
       for (const ctx of group) {
-        const ctxChars = ctx.events.reduce((sum, e) => sum + e.length, 0);
+        const ctxBytes = ctx.events.reduce((sum, e) => sum + new Blob([e]).size, 0);
         if (current === null) {
           // Reset attempts to 0 on the merged context so the post-throttle delivery gets a
           // full retry budget. The throttle pause has already absorbed back-pressure; the
           // alternative (Math.max of source attempts) would collapse N source budgets into
           // one and end-of-life all N IDB records on a single retry exhaustion.
           current = { ...ctx, events: [...ctx.events], attempts: 0 };
-          currentChars = ctxChars;
+          currentBytes = ctxBytes;
           continue;
         }
-        if (currentChars + ctxChars > MERGE_AFTER_THROTTLE_SOFT_CAP) {
+        if (currentBytes + ctxBytes > MERGE_AFTER_THROTTLE_SOFT_CAP) {
           flushCurrent();
           current = { ...ctx, events: [...ctx.events], attempts: 0 };
-          currentChars = ctxChars;
+          currentBytes = ctxBytes;
           continue;
         }
         const prevOnComplete = current.onComplete;
         const ctxOnComplete = ctx.onComplete;
         current.events = current.events.concat(ctx.events);
-        currentChars += ctxChars;
+        currentBytes += ctxBytes;
         current.onComplete = async () => {
           // Run both in parallel; an underlying store cleanup failure in one shouldn't
           // block the other. Errors are surfaced per the source callbacks' own handlers.
-          await Promise.all([prevOnComplete(), ctxOnComplete()]);
+          await Promise.allSettled([prevOnComplete(), ctxOnComplete()]);
         };
       }
       flushCurrent();
