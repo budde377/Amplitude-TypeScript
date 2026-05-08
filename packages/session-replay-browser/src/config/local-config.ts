@@ -134,7 +134,14 @@ function sanitizeFlushIntervalConfig(raw: FlushIntervalConfig, loggerProvider: I
     }
   }
   if (raw.maxIntervalMs !== undefined) {
-    if (!Number.isFinite(raw.maxIntervalMs) || raw.maxIntervalMs < MIN_FLUSH_INTERVAL_FLOOR_MS) {
+    if (!Number.isFinite(raw.maxIntervalMs)) {
+      // For maxIntervalMs, Infinity means "no cap" — clamp to MAX_INTERVAL to preserve that intent.
+      // NaN is invalid and also gets the large-default treatment for a maximum bound.
+      loggerProvider.warn(
+        `flushIntervalConfig.maxIntervalMs ${raw.maxIntervalMs} is not finite; clamping to ${MAX_INTERVAL}ms.`,
+      );
+      sanitized.maxIntervalMs = MAX_INTERVAL;
+    } else if (raw.maxIntervalMs < MIN_FLUSH_INTERVAL_FLOOR_MS) {
       loggerProvider.warn(
         `flushIntervalConfig.maxIntervalMs ${raw.maxIntervalMs} is below floor ${MIN_FLUSH_INTERVAL_FLOOR_MS}ms; clamping.`,
       );
