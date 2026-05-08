@@ -34,6 +34,7 @@ export class InMemoryEventsStore extends BaseEventsStore<number> {
     for (const [sequenceId, { sessionId, events }] of Object.entries(this.finalizedSequences)) {
       if (events.length === 0) {
         this.maybeWarnEmptyFiltered('getSequencesToSend');
+        delete this.finalizedSequences[Number(sequenceId)];
         continue;
       }
       result.push({ sequenceId: Number(sequenceId), sessionId, events });
